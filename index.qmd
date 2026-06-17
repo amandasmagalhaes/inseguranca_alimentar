@@ -36,7 +36,7 @@ rm(list = ls())
 ```{r}
 #| label: Diretório
 #| code-summary: Diretório
-setwd("C:/Users/amand/Amanda/GitHub/inseguranca_alimentar")
+setwd("/Users/amanda/Documents/GitHub/inseguranca_alimentar")
 ```
 
 ```{r}
@@ -1116,8 +1116,10 @@ vif(mod_final)
 ```{r}
 #| label: Tabela multivariada com todas variáveis
 #| code-summary: Tabela multivariada com todas variáveis
-# Modelo ajustado por todas as variáveis
+#| label: Tabela multivariada com todas variáveis
+#| code-summary: Tabela multivariada com todas variáveis
 options(survey.lonely.psu = "adjust")
+# Modelo ajustado por todas as variáveis
 mod_final <- svyglm(
   n73_6 ~
     faixa_etaria +
@@ -1135,6 +1137,9 @@ mod_final <- svyglm(
   design = desenho,
   family = quasibinomial()
 )
+
+# Número de observações efetivamente utilizadas no modelo
+n_modelo <- nrow(model.frame(mod_final))
 
 tbl_regression(
   mod_final,
@@ -1159,7 +1164,7 @@ tbl_regression(
 ) |>
   modify_header(
     label ~ glue::glue(
-      "**Características (n = {format(nrow(df), big.mark = '.', decimal.mark = ',')})**"
+      "**Características (n = {format(n_modelo, big.mark = '.', decimal.mark = ',')})**"
     ),
     estimate ~ "**OR ajustada**",
     p.value ~ "**p-valor**"
@@ -1174,7 +1179,7 @@ tbl_regression(
   as_gt() |>
   gt::tab_source_note(
     gt::md(
-      "OR ajustada obtida por regressão logística considerando simultaneamente faixa etária, sexo, raça/cor, escolaridade, estado civil, aposentadoria, número de moradores no domicílio, renda domiciliar per capita, recebimento de benefício, tipo de domicílio, área de residência e macrorregião geográfica."
+      "OR ajustada obtida por regressão logística considerando simultaneamente faixa etária, sexo, raça/cor, escolaridade, estado civil, aposentadoria, número de moradores no domicílio, renda domiciliar per capita, recebimento de benefício, tipo de domicílio, área de residência e macrorregião geográfica. N analítico = {format(n_modelo, big.mark = '.', decimal.mark = ',')}."
     )
   )
 ```
