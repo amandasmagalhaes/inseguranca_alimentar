@@ -587,8 +587,8 @@ tibble(
 df |>
   select(
     n73_6,
-    faixa_etaria,
     sexo,
+    faixa_etaria,
     raca_cor,
     escolaridade,
     estado_civil,
@@ -609,7 +609,7 @@ df |>
       escolaridade ~ "Escolaridade",
       estado_civil ~ "Estado civil",
       aposentadoria ~ "Aposentadoria",
-      moradores ~ "Morar só (sim ou não)",
+      moradores ~ "Morar só",
       renda_tercil ~ "Renda domiciliar per capita (tercis)",
       beneficio ~ "Recebimento de benefício",
       domicilio ~ "Tipo de domicílio",
@@ -642,12 +642,54 @@ df |>
 #| label: Tabela estratificada
 #| code-summary: Tabela estratificada
 options(survey.lonely.psu = "adjust")
+ajustar_somas_percentuais <- function(tbl) {
+  estatisticas <- intersect(
+    c("stat_0", "stat_1", "stat_2"),
+    names(tbl$table_body)
+  )
+  tbl |>
+    modify_table_body(
+      ~ {
+        corpo <- .x
+        for (coluna in estatisticas) {
+          for (variavel in unique(corpo$variable)) {
+            linhas <- which(
+              corpo$variable == variavel & corpo$row_type == "level"
+            )
+            valores <- corpo[[coluna]][linhas]
+            percentuais <- suppressWarnings(
+              as.numeric(sub(".*\\(([0-9.]+)%\\).*", "\\1", valores))
+            )
+            validos <- !is.na(percentuais)
+            if (sum(validos) > 0) {
+              ajuste <- round(100 - sum(percentuais[validos]), 1)
+              if (abs(ajuste) > 0 && abs(ajuste) <= 0.1) {
+                ultima <- tail(which(validos), 1)
+                novo_percentual <- format(
+                  round(percentuais[ultima] + ajuste, 1),
+                  nsmall = 1,
+                  decimal.mark = "."
+                )
+                valores[ultima] <- sub(
+                  "\\([0-9.]+%\\)",
+                  paste0("(", novo_percentual, "%)"),
+                  valores[ultima]
+                )
+                corpo[[coluna]][linhas] <- valores
+              }
+            }
+          }
+        }
+        corpo
+      }
+    )
+}
 tbl_svysummary(
   desenho,
   by = n73_6,
   include = c(
-    faixa_etaria,
     sexo,
+    faixa_etaria,
     raca_cor,
     escolaridade,
     estado_civil,
@@ -666,7 +708,7 @@ tbl_svysummary(
     escolaridade ~ "Escolaridade",
     estado_civil ~ "Estado civil",
     aposentadoria ~ "Aposentadoria",
-    moradores ~ "Morar só (sim ou não)",
+    moradores ~ "Morar só",
     renda_tercil ~ "Renda domiciliar per capita (tercis)",
     beneficio ~ "Recebimento de benefício",
     domicilio ~ "Tipo de domicílio",
@@ -704,7 +746,8 @@ tbl_svysummary(
   ) |>
   modify_caption(
     "**Tabela 2. Características da amostra total e segundo insegurança alimentar**"
-  )
+  ) |>
+  ajustar_somas_percentuais()
 ```
 
 
@@ -757,13 +800,13 @@ calc_prev <- function(var, label, desenho) {
 }
 vars <- tribble(
   ~var            , ~label                                 ,
-  "faixa_etaria"  , "Faixa etária"                         ,
   "sexo"          , "Sexo"                                 ,
+  "faixa_etaria"  , "Faixa etária"                         ,
   "raca_cor"      , "Raça/cor"                             ,
   "escolaridade"  , "Escolaridade"                         ,
   "estado_civil"  , "Estado civil"                         ,
   "aposentadoria" , "Aposentadoria"                        ,
-  "moradores"     , "Morar só (sim ou não)"                ,
+  "moradores"     , "Morar só"                             ,
   "renda_tercil"  , "Renda domiciliar per capita (tercis)" ,
   "beneficio"     , "Recebimento de benefício"             ,
   "domicilio"     , "Tipo de domicílio"                    ,
@@ -813,8 +856,8 @@ tab_prev |>
 #| code-summary: Tabela univariada
 options(survey.lonely.psu = "adjust")
 vars <- c(
-  "faixa_etaria",
   "sexo",
+  "faixa_etaria",
   "raca_cor",
   "escolaridade",
   "estado_civil",
@@ -827,13 +870,13 @@ vars <- c(
   "regiao"
 )
 labels <- c(
-  faixa_etaria = "Faixa etária",
   sexo = "Sexo",
+  faixa_etaria = "Faixa etária",
   raca_cor = "Raça/cor",
   escolaridade = "Escolaridade",
   estado_civil = "Estado civil",
   aposentadoria = "Aposentadoria",
-  moradores = "Morar só (sim ou não)",
+  moradores = "Morar só",
   renda_tercil = "Renda domiciliar per capita (tercis)",
   beneficio = "Recebimento de benefício",
   domicilio = "Tipo de domicílio",
@@ -941,6 +984,7 @@ resultado_uni |>
 #| code-summary: Modelo 1 - Demográfico
 mod1 <- svyglm(
   n73_6 ~
+    sexo +
     faixa_etaria +
     raca_cor +
     escolaridade +
@@ -959,6 +1003,7 @@ summary(mod1)
 #| code-summary: Modelo 2 - Demográfico e socioeconômico
 mod2 <- svyglm(
   n73_6 ~
+    sexo +
     faixa_etaria +
     raca_cor +
     escolaridade +
@@ -979,6 +1024,7 @@ summary(mod2)
 #| code-summary: Modelo 3 - Demográfico, socioeconômico, domiciliar e geográfico
 mod3 <- svyglm(
   n73_6 ~
+    sexo +
     faixa_etaria +
     raca_cor +
     escolaridade +
@@ -1005,6 +1051,7 @@ tbl_mod1 <- tbl_regression(
   exponentiate = TRUE,
   add_estimate_to_reference_rows = TRUE,
   label = list(
+    sexo ~ "Sexo",
     faixa_etaria ~ "Faixa etária",
     raca_cor ~ "Raça/cor",
     escolaridade ~ "Escolaridade",
@@ -1019,6 +1066,7 @@ tbl_mod2 <- tbl_regression(
   exponentiate = TRUE,
   add_estimate_to_reference_rows = TRUE,
   label = list(
+    sexo ~ "Sexo",
     faixa_etaria ~ "Faixa etária",
     raca_cor ~ "Raça/cor",
     escolaridade ~ "Escolaridade",
@@ -1035,6 +1083,7 @@ tbl_mod3 <- tbl_regression(
   exponentiate = TRUE,
   add_estimate_to_reference_rows = TRUE,
   label = list(
+    sexo ~ "Sexo",
     faixa_etaria ~ "Faixa etária",
     raca_cor ~ "Raça/cor",
     escolaridade ~ "Escolaridade",
@@ -1078,7 +1127,7 @@ tbl_merge(
   as_gt() |>
   gt::tab_source_note(
     gt::md(glue::glue(
-      "Modelo 1: faixa etária, raça/cor, escolaridade, estado civil e aposentadoria.  
+      "Modelo 1: sexo, faixa etária, raça/cor, escolaridade, estado civil e aposentadoria.  
       Modelo 2: Modelo 1 + renda domiciliar per capita e recebimento de benefício.  
       Modelo 3: Modelo 2 + tipo de domicílio e macrorregião geográfica."
     ))
@@ -1092,8 +1141,8 @@ tbl_merge(
 #| code-summary: Modelo completo
 mod_final <- svyglm(
   n73_6 ~
-    faixa_etaria +
     sexo +
+    faixa_etaria +
     raca_cor +
     escolaridade +
     estado_civil +
@@ -1120,8 +1169,8 @@ options(survey.lonely.psu = "adjust")
 # Modelo ajustado por todas as variáveis
 mod_final <- svyglm(
   n73_6 ~
-    faixa_etaria +
     sexo +
+    faixa_etaria +
     raca_cor +
     escolaridade +
     estado_civil +
@@ -1144,13 +1193,13 @@ tbl_regression(
   exponentiate = TRUE,
   add_estimate_to_reference_rows = TRUE,
   label = list(
-    faixa_etaria ~ "Faixa etária",
     sexo ~ "Sexo",
+    faixa_etaria ~ "Faixa etária",
     raca_cor ~ "Raça/cor",
     escolaridade ~ "Escolaridade",
     estado_civil ~ "Estado civil",
     aposentadoria ~ "Aposentadoria",
-    moradores ~ "Morar só (sim ou não)",
+    moradores ~ "Morar só",
     renda_tercil ~ "Renda domiciliar per capita (tercis)",
     beneficio ~ "Recebimento de benefício",
     domicilio ~ "Tipo de domicílio",
