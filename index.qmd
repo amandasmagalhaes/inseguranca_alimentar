@@ -323,33 +323,33 @@ df |>
   mutate(percentual = round(100 * n / sum(n), 1))
 ```
 
-### Número de moradores no domicílio
+### Morar só
 
 ```{r}
-#| label: Descritiva moradores
-#| code-summary: Descritiva moradores
+#| label: Descritiva morar só
+#| code-summary: Descritiva morar só
 #| results: hide
 table(df$nmoradores, useNA = "ifany")
 ```
 
 ```{r}
-#| label: Categorizar moradores
-#| code-summary: Categorizar moradores
+#| label: Categorizar morar só
+#| code-summary: Categorizar morar só
 df <- df |>
   mutate(
     moradores = factor(
       case_when(
-        nmoradores == 1 ~ "1",
-        nmoradores >= 2 ~ "≥2"
+        nmoradores == 1 ~ "Sim",
+        nmoradores >= 2 ~ "Não"
       ),
-      levels = c("1", "≥2")
+      levels = c("Não", "Sim")
     )
   )
 ```
 
 ```{r}
-#| label: Descritiva moradores categorizado
-#| code-summary: Descritiva moradores categorizado
+#| label: Descritiva morar só categorizado
+#| code-summary: Descritiva morar só categorizado
 df |>
   count(moradores) |>
   mutate(percentual = round(100 * n / sum(n), 1))
@@ -609,7 +609,7 @@ df |>
       escolaridade ~ "Escolaridade",
       estado_civil ~ "Estado civil",
       aposentadoria ~ "Aposentadoria",
-      moradores ~ "Número de moradores no domicílio",
+      moradores ~ "Morar só (sim ou não)",
       renda_tercil ~ "Renda domiciliar per capita (tercis)",
       beneficio ~ "Recebimento de benefício",
       domicilio ~ "Tipo de domicílio",
@@ -666,7 +666,7 @@ tbl_svysummary(
     escolaridade ~ "Escolaridade",
     estado_civil ~ "Estado civil",
     aposentadoria ~ "Aposentadoria",
-    moradores ~ "Número de moradores no domicílio",
+    moradores ~ "Morar só (sim ou não)",
     renda_tercil ~ "Renda domiciliar per capita (tercis)",
     beneficio ~ "Recebimento de benefício",
     domicilio ~ "Tipo de domicílio",
@@ -763,7 +763,7 @@ vars <- tribble(
   "escolaridade"  , "Escolaridade"                         ,
   "estado_civil"  , "Estado civil"                         ,
   "aposentadoria" , "Aposentadoria"                        ,
-  "moradores"     , "Número de moradores no domicílio"     ,
+  "moradores"     , "Morar só (sim ou não)"                ,
   "renda_tercil"  , "Renda domiciliar per capita (tercis)" ,
   "beneficio"     , "Recebimento de benefício"             ,
   "domicilio"     , "Tipo de domicílio"                    ,
@@ -833,7 +833,7 @@ labels <- c(
   escolaridade = "Escolaridade",
   estado_civil = "Estado civil",
   aposentadoria = "Aposentadoria",
-  moradores = "Número de moradores no domicílio",
+  moradores = "Morar só (sim ou não)",
   renda_tercil = "Renda domiciliar per capita (tercis)",
   beneficio = "Recebimento de benefício",
   domicilio = "Tipo de domicílio",
@@ -1077,11 +1077,11 @@ tbl_merge(
   bold_labels() |>
   as_gt() |>
   gt::tab_source_note(
-    gt::md(
+    gt::md(glue::glue(
       "Modelo 1: faixa etária, raça/cor, escolaridade, estado civil e aposentadoria.  
       Modelo 2: Modelo 1 + renda domiciliar per capita e recebimento de benefício.  
       Modelo 3: Modelo 2 + tipo de domicílio e macrorregião geográfica."
-    )
+    ))
   )
 ```
 
@@ -1114,8 +1114,6 @@ vif(mod_final)
 ## Tabela multivariada completa
 
 ```{r}
-#| label: Tabela multivariada com todas variáveis
-#| code-summary: Tabela multivariada com todas variáveis
 #| label: Tabela multivariada com todas variáveis
 #| code-summary: Tabela multivariada com todas variáveis
 options(survey.lonely.psu = "adjust")
@@ -1152,7 +1150,7 @@ tbl_regression(
     escolaridade ~ "Escolaridade",
     estado_civil ~ "Estado civil",
     aposentadoria ~ "Aposentadoria",
-    moradores ~ "Número de moradores no domicílio",
+    moradores ~ "Morar só (sim ou não)",
     renda_tercil ~ "Renda domiciliar per capita (tercis)",
     beneficio ~ "Recebimento de benefício",
     domicilio ~ "Tipo de domicílio",
@@ -1170,7 +1168,7 @@ tbl_regression(
     p.value ~ "**p-valor**"
   ) |>
   modify_caption(
-    "**Tabela 5. Associação entre características sociodemográficas e insegurança alimentar**"
+    "**Tabela 6. Associação entre características sociodemográficas e insegurança alimentar**"
   ) |>
   modify_footnote(
     everything() ~ NA
@@ -1178,8 +1176,8 @@ tbl_regression(
   bold_labels() |>
   as_gt() |>
   gt::tab_source_note(
-    gt::md(
-      "OR ajustada obtida por regressão logística considerando simultaneamente faixa etária, sexo, raça/cor, escolaridade, estado civil, aposentadoria, número de moradores no domicílio, renda domiciliar per capita, recebimento de benefício, tipo de domicílio, área de residência e macrorregião geográfica. N analítico = {format(n_modelo, big.mark = '.', decimal.mark = ',')}."
-    )
+    gt::md(glue::glue(
+      "OR ajustada obtida por regressão logística considerando simultaneamente faixa etária, sexo, raça/cor, escolaridade, estado civil, aposentadoria, morar só (sim ou não), renda domiciliar per capita, recebimento de benefício, tipo de domicílio, área de residência e macrorregião geográfica. N analítico = {format(n_modelo, big.mark = '.', decimal.mark = ',')}."
+    ))
   )
 ```
